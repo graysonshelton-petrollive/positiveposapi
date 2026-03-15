@@ -1,0 +1,6 @@
+@PositivePOSAPI_HostAddress = http://localhost:5066
+
+GET {{PositivePOSAPI_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
