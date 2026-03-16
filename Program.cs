@@ -53,8 +53,10 @@ builder.Services.AddSwaggerGen(options =>
 // DB Contexts
 builder.Services.AddDbContext<PositiveDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+
 builder.Services.AddDbContext<AuthDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+
 // Identity
 builder.Services
     .AddIdentity<AppUser, IdentityRole<Guid>>(options =>
@@ -90,20 +92,28 @@ builder.Services.AddAuthorization();
 // CORS
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowUI", p =>
-        p.AllowAnyHeader()
-         .AllowAnyMethod()
-         .SetIsOriginAllowed(_ => true)
-         .AllowCredentials());
+    options.AddPolicy("AllowUI", policy =>
+    {
+        policy.WithOrigins(
+                "http://localhost:5173",
+                "https://localhost:5173"
+            ) 
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
+    });
 });
 
 var app = builder.Build();
 
-// Helps when behind proxy
+// Helps when behind DigitalOcean/App Platform proxy
 app.UseForwardedHeaders(new ForwardedHeadersOptions
 {
     ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
 });
+
+// useful while debugging
+app.UseDeveloperExceptionPage();
 
 // Swagger
 app.UseSwagger();
@@ -114,7 +124,9 @@ app.UseSwaggerUI(c =>
 });
 
 app.UseHttpsRedirection();
+
 app.UseCors("AllowUI");
+
 app.UseAuthentication();
 app.UseAuthorization();
 
