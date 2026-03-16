@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\GPGrayson\\source\\repos\\PetrolLive\\petrolliveprod\\PositivePOSAPI\\PositivePOSAPI.csproj": {}
+    "C:\\Users\\GPGrayson\\source\\repos\\PetrolLive\\PetrolLiveProd\\PositivePOSAPI\\PositivePOSAPI.csproj": {}
   },
   "projects": {
-    "C:\\Users\\GPGrayson\\source\\repos\\PetrolLive\\petrolliveprod\\PositivePOSAPI\\PositivePOSAPI.csproj": {
+    "C:\\Users\\GPGrayson\\source\\repos\\PetrolLive\\PetrolLiveProd\\PositivePOSAPI\\PositivePOSAPI.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\GPGrayson\\source\\repos\\PetrolLive\\petrolliveprod\\PositivePOSAPI\\PositivePOSAPI.csproj",
+        "projectUniqueName": "C:\\Users\\GPGrayson\\source\\repos\\PetrolLive\\PetrolLiveProd\\PositivePOSAPI\\PositivePOSAPI.csproj",
         "projectName": "PositivePOSAPI",
-        "projectPath": "C:\\Users\\GPGrayson\\source\\repos\\PetrolLive\\petrolliveprod\\PositivePOSAPI\\PositivePOSAPI.csproj",
+        "projectPath": "C:\\Users\\GPGrayson\\source\\repos\\PetrolLive\\PetrolLiveProd\\PositivePOSAPI\\PositivePOSAPI.csproj",
         "packagesPath": "C:\\Users\\GPGrayson\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\GPGrayson\\source\\repos\\PetrolLive\\petrolliveprod\\PositivePOSAPI\\obj\\",
+        "outputPath": "C:\\Users\\GPGrayson\\source\\repos\\PetrolLive\\PetrolLiveProd\\PositivePOSAPI\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages",
@@ -70,7 +70,7 @@
               "target": "Package",
               "version": "[9.0.0, )"
             },
-            "Microsoft.EntityFrameworkCore.SqlServer": {
+            "Npgsql.EntityFrameworkCore.PostgreSQL": {
               "target": "Package",
               "version": "[9.0.0, )"
             },

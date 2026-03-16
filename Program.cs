@@ -52,11 +52,9 @@ builder.Services.AddSwaggerGen(options =>
 
 // DB Contexts
 builder.Services.AddDbContext<PositiveDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.AddDbContext<AuthDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 // Identity
 builder.Services
     .AddIdentity<AppUser, IdentityRole<Guid>>(options =>
@@ -101,13 +99,13 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// Helps when behind DigitalOcean/App Platform proxy
+// Helps when behind proxy
 app.UseForwardedHeaders(new ForwardedHeadersOptions
 {
     ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
 });
 
-// ENABLE SWAGGER IN ALL ENVIRONMENTS
+// Swagger
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
@@ -116,14 +114,11 @@ app.UseSwaggerUI(c =>
 });
 
 app.UseHttpsRedirection();
-
 app.UseCors("AllowUI");
-
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
-
 app.MapGet("/", () => Results.Redirect("/swagger"));
 
 app.Run();
