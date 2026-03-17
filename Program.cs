@@ -89,6 +89,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAuthorization();
 
+
 // CORS
 builder.Services.AddCors(options =>
 {
@@ -97,6 +98,7 @@ builder.Services.AddCors(options =>
         policy.WithOrigins(
                 // "http://localhost:5173",
                 "https://localhost:5173", 
+                "http://10.5.0.2:5173",
                 "https://jellyfish-app-mm2x3.ondigitalocean.app"
             ) 
             .AllowAnyHeader()
@@ -106,6 +108,20 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+
+app.MapGet("/health/db", async (AuthDbContext db) =>
+{
+    try
+    {
+        var canConnect = await db.Database.CanConnectAsync();
+        return Results.Ok(new { ok = canConnect });
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem(ex.Message);
+    }
+});
+
 
 // Helps when behind DigitalOcean/App Platform proxy
 app.UseForwardedHeaders(new ForwardedHeadersOptions
