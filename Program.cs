@@ -96,12 +96,11 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowUI", policy =>
     {
         policy.WithOrigins(
-                // "http://localhost:5173",
-                "http://localhost:5173", 
+                "http://localhost:5173",
                 "http://10.5.0.2:5173",
-                "Http://104.131.179.92",
+                "http://104.131.179.92",
                 "https://jellyfish-app-mm2x3.ondigitalocean.app"
-            ) 
+            )
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials();
