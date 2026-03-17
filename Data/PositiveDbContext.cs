@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PositivePOSAPI.Models;
+using POSitive.API.Models;
 
 namespace PositivePOSAPI.Data;
 
@@ -22,6 +23,14 @@ public partial class PositiveDbContext : DbContext
     public virtual DbSet<UserApproval> UserApprovals { get; set; }
     public virtual DbSet<UserAssignment> UserAssignments { get; set; }
     public virtual DbSet<UserPermission> UserPermissions { get; set; }
+
+    public virtual DbSet<POSTicketNumber> POSTicketNumbers { get; set; }
+    public virtual DbSet<POSTransaction> POSTransactions { get; set; }
+    public virtual DbSet<POSTransactionsDetail> POSTransactionsDetails { get; set; }
+    public virtual DbSet<ActiveTransaction> ActiveTransactions { get; set; }
+    public virtual DbSet<POSTransactionsDetailFuel> POSTransactionsDetailFuels { get; set; }
+    public virtual DbSet<POSFuelPrice> POSFuelPrices { get; set; }
+    public virtual DbSet<POSFuelPricesHistory> POSFuelPricesHistory { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -296,6 +305,42 @@ public partial class PositiveDbContext : DbContext
                 .WithMany(p => p.UserPermissions)
                 .HasForeignKey(d => d.UserId)
                 .HasConstraintName("FK_Admin_UserPermissions_AspNetUsers");
+        });
+
+        modelBuilder.Entity<ActiveTransaction>(entity =>
+        {
+            entity.HasNoKey();
+            entity.ToTable("ActiveTransaction", "dbo");
+        });
+
+        modelBuilder.Entity<POSTicketNumber>(entity =>
+        {
+            entity.ToTable("POSTicketNumbers", "dbo");
+        });
+
+        modelBuilder.Entity<POSTransaction>(entity =>
+        {
+            entity.ToTable("POSTransaction", "dbo");
+        });
+
+        modelBuilder.Entity<POSTransactionsDetail>(entity =>
+        {
+            entity.ToTable("POSTransactionsDetail", "dbo");
+        });
+
+        modelBuilder.Entity<POSTransactionsDetailFuel>(entity =>
+        {
+            entity.ToTable("POSTransactionsDetailFuel", "dbo");
+        });
+
+        modelBuilder.Entity<POSFuelPrice>(entity =>
+        {
+            entity.ToTable("POSFuelPrice", "dbo");
+        });
+
+        modelBuilder.Entity<POSFuelPricesHistory>(entity =>
+        {
+            entity.ToTable("POSFuelPricesHistory", "dbo");
         });
 
         OnModelCreatingPartial(modelBuilder);
