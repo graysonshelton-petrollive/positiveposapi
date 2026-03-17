@@ -1,5 +1,4 @@
 C:\Users\GPGrayson\source\repos\PetrolLive\PetrolLiveProd\PositivePOSAPI\bin\Debug\net9.0\publish\web.config
-C:\Users\GPGrayson\source\repos\PetrolLive\PetrolLiveProd\PositivePOSAPI\bin\Debug\net9.0\appsettings.Development.json
 C:\Users\GPGrayson\source\repos\PetrolLive\PetrolLiveProd\PositivePOSAPI\bin\Debug\net9.0\appsettings.json
 C:\Users\GPGrayson\source\repos\PetrolLive\PetrolLiveProd\PositivePOSAPI\bin\Debug\net9.0\publish\appsettings.Development.json
 C:\Users\GPGrayson\source\repos\PetrolLive\PetrolLiveProd\PositivePOSAPI\bin\Debug\net9.0\publish\appsettings.json
