@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -10,162 +10,161 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Controllers + JSON
-builder.Services.AddControllers()
-    .AddJsonOptions(o => o.JsonSerializerOptions.PropertyNameCaseInsensitive = true);
+// Logging
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
 
-// Swagger + JWT support
+// Connection string
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+if (string.IsNullOrWhiteSpace(connectionString))
+{
+    throw new InvalidOperationException("DefaultConnection is missing or empty.");
+}
+
+// Auth DbContext
+builder.Services.AddDbContext<AuthDbContext>(options =>
+    options.UseNpgsql(connectionString));
+
+// Optional business DbContext
+builder.Services.AddDbContext<PositiveDbContext>(options =>
+    options.UseNpgsql(connectionString));
+
+// Identity
+builder.Services
+    .AddIdentityCore<AppUser>(options =>
+    {
+        options.User.RequireUniqueEmail = true;
+
+        options.Password.RequireDigit = false;
+        options.Password.RequireLowercase = false;
+        options.Password.RequireUppercase = false;
+        options.Password.RequireNonAlphanumeric = false;
+        options.Password.RequiredLength = 6;
+
+        options.SignIn.RequireConfirmedEmail = false;
+        options.SignIn.RequireConfirmedAccount = false;
+    })
+    .AddRoles<IdentityRole<Guid>>()
+    .AddEntityFrameworkStores<AuthDbContext>()
+    .AddSignInManager<SignInManager<AppUser>>()
+    .AddDefaultTokenProviders();
+
+// JWT
+var jwtKey = builder.Configuration["Jwt:Key"];
+if (string.IsNullOrWhiteSpace(jwtKey))
+{
+    throw new InvalidOperationException("Jwt:Key is missing or empty.");
+}
+
+if (Encoding.UTF8.GetByteCount(jwtKey) < 32)
+{
+    throw new InvalidOperationException("Jwt:Key must be at least 32 bytes long.");
+}
+
+var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "PositivePOSAPI";
+var jwtAudience = builder.Configuration["Jwt:Audience"] ?? "PositivePOSUI";
+
+builder.Services
+    .AddAuthentication(options =>
+    {
+        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    })
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidIssuer = jwtIssuer,
+
+            ValidateAudience = true,
+            ValidAudience = jwtAudience,
+
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
+
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.FromMinutes(1)
+        };
+    });
+
+// CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowAnyOrigin();
+    });
+});
+
+builder.Services.AddAuthorization();
+builder.Services.AddControllers();
+
+// Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("v1", new OpenApiInfo
     {
-        Title = "PositivePOSAPI",
+        Title = "PositivePOS API",
         Version = "v1"
     });
 
-    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    var jwtSecurityScheme = new OpenApiSecurityScheme
     {
-        Name = "Authorization",
-        Type = SecuritySchemeType.Http,
         Scheme = "bearer",
         BearerFormat = "JWT",
+        Name = "Authorization",
         In = ParameterLocation.Header,
-        Description = "Enter: Bearer {your JWT token}"
-    });
+        Type = SecuritySchemeType.Http,
+        Description = "Paste JWT token here.",
+        Reference = new OpenApiReference
+        {
+            Id = JwtBearerDefaults.AuthenticationScheme,
+            Type = ReferenceType.SecurityScheme
+        }
+    };
 
+    options.AddSecurityDefinition(jwtSecurityScheme.Reference.Id, jwtSecurityScheme);
     options.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
-        {
-            new OpenApiSecurityScheme
-            {
-                Reference = new OpenApiReference
-                {
-                    Type = ReferenceType.SecurityScheme,
-                    Id = "Bearer"
-                }
-            },
-            Array.Empty<string>()
-        }
-    });
-});
-
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-if (string.IsNullOrWhiteSpace(connectionString))
-    throw new InvalidOperationException("DefaultConnection is missing from configuration.");
-
-var jwtKey = builder.Configuration["Jwt:Key"];
-if (string.IsNullOrWhiteSpace(jwtKey))
-    throw new InvalidOperationException("Jwt:Key is missing from configuration.");
-
-// DB Contexts
-builder.Services.AddDbContext<PositiveDbContext>(options =>
-    options.UseNpgsql(connectionString));
-
-builder.Services.AddDbContext<AuthDbContext>(options =>
-    options.UseNpgsql(connectionString));
-
-// Identity -> AspNetUsers/AspNetRoles via AuthDbContext
-builder.Services
-    .AddIdentity<AppUser, IdentityRole<Guid>>(options =>
-    {
-        options.User.RequireUniqueEmail = true;
-
-        options.Password.RequireDigit = false;
-        options.Password.RequireUppercase = false;
-        options.Password.RequireNonAlphanumeric = false;
-        options.Password.RequireLowercase = false;
-        options.Password.RequiredLength = 6;
-
-        options.Lockout.AllowedForNewUsers = true;
-        options.Lockout.MaxFailedAccessAttempts = 5;
-        options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
-    })
-    .AddEntityFrameworkStores<AuthDbContext>()
-    .AddDefaultTokenProviders();
-
-// JWT
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
-    {
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer = false,
-            ValidateAudience = false,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
-            ClockSkew = TimeSpan.FromMinutes(2)
-        };
-    });
-
-builder.Services.AddAuthorization();
-
-// CORS
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowUI", policy =>
-    {
-        policy.WithOrigins(
-            "http://localhost:5173",
-            "http://10.5.0.2:5173",
-            "http://104.131.179.92",
-            "https://jellyfish-app-mm2x3.ondigitalocean.app"
-        )
-        .AllowAnyHeader()
-        .AllowAnyMethod()
-        .AllowCredentials();
+        { jwtSecurityScheme, Array.Empty<string>() }
     });
 });
 
 var app = builder.Build();
 
-// Helps when behind DigitalOcean/App Platform proxy
-app.UseForwardedHeaders(new ForwardedHeadersOptions
+// Global JSON exception handler
+app.UseExceptionHandler(errorApp =>
 {
-    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+    errorApp.Run(async context =>
+    {
+        context.Response.StatusCode = 500;
+        context.Response.ContentType = "application/json";
+
+        var exceptionFeature = context.Features.Get<IExceptionHandlerFeature>();
+        var ex = exceptionFeature?.Error;
+
+        await context.Response.WriteAsJsonAsync(new
+        {
+            message = "Unhandled server error.",
+            detail = ex?.Message,
+            inner = ex?.InnerException?.Message
+        });
+    });
 });
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseDeveloperExceptionPage();
-}
-
-// Swagger
 app.UseSwagger();
-app.UseSwaggerUI(c =>
-{
-    c.SwaggerEndpoint("/swagger/v1/swagger.json", "PositivePOSAPI v1");
-    c.RoutePrefix = "swagger";
-});
+app.UseSwaggerUI();
 
-// Keep this only if proxy/HTTPS behavior is correct in App Platform
 app.UseHttpsRedirection();
-
-app.UseCors("AllowUI");
+app.UseCors("AllowFrontend");
 
 app.UseAuthentication();
 app.UseAuthorization();
-
-app.MapGet("/", () => Results.Ok(new
-{
-    app = "PositivePOSAPI",
-    status = "running",
-    environment = app.Environment.EnvironmentName
-}));
-
-app.MapGet("/health/db", async (AuthDbContext db) =>
-{
-    try
-    {
-        var canConnect = await db.Database.CanConnectAsync();
-        return Results.Ok(new { ok = canConnect });
-    }
-    catch (Exception ex)
-    {
-        return Results.Problem(ex.ToString());
-    }
-});
 
 app.MapControllers();
 
