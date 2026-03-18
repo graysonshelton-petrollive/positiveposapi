@@ -120,7 +120,7 @@ builder.Services.AddSwaggerGen(options =>
         Name = "Authorization",
         In = ParameterLocation.Header,
         Type = SecuritySchemeType.Http,
-        Description = "Paste JWT token here.",
+        Description = "ConstitutionClassUSSEnterpriseNCC1701Alpha",
         Reference = new OpenApiReference
         {
             Id = JwtBearerDefaults.AuthenticationScheme,
