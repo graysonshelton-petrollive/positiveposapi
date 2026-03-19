@@ -15,23 +15,26 @@ builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 
 // Connection string
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+var connectionString =
+    builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? builder.Configuration["ConnectionStrings:DefaultConnection"]
+    ?? builder.Configuration["DEFAULT_CONNECTION"];
+
 if (string.IsNullOrWhiteSpace(connectionString))
 {
     throw new InvalidOperationException("DefaultConnection is missing or empty.");
 }
 
-// Auth DbContext
+// DbContexts
 builder.Services.AddDbContext<AuthDbContext>(options =>
     options.UseNpgsql(connectionString));
 
-// Optional business DbContext
 builder.Services.AddDbContext<PositiveDbContext>(options =>
     options.UseNpgsql(connectionString));
 
 // Identity
 builder.Services
-    .AddIdentityCore<AppUser>(options =>
+    .AddIdentity<AppUser, IdentityRole<Guid>>(options =>
     {
         options.User.RequireUniqueEmail = true;
 
@@ -44,13 +47,14 @@ builder.Services
         options.SignIn.RequireConfirmedEmail = false;
         options.SignIn.RequireConfirmedAccount = false;
     })
-    .AddRoles<IdentityRole<Guid>>()
     .AddEntityFrameworkStores<AuthDbContext>()
-    .AddSignInManager<SignInManager<AppUser>>()
     .AddDefaultTokenProviders();
 
 // JWT
-var jwtKey = builder.Configuration["Jwt:Key"];
+var jwtKey =
+    builder.Configuration["Jwt:Key"]
+    ?? builder.Configuration["JWT_KEY"];
+
 if (string.IsNullOrWhiteSpace(jwtKey))
 {
     throw new InvalidOperationException("Jwt:Key is missing or empty.");
@@ -61,8 +65,15 @@ if (Encoding.UTF8.GetByteCount(jwtKey) < 32)
     throw new InvalidOperationException("Jwt:Key must be at least 32 bytes long.");
 }
 
-var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "PositivePOSAPI";
-var jwtAudience = builder.Configuration["Jwt:Audience"] ?? "PositivePOSUI";
+var jwtIssuer =
+    builder.Configuration["Jwt:Issuer"]
+    ?? builder.Configuration["JWT_ISSUER"]
+    ?? "PositivePOSAPI";
+
+var jwtAudience =
+    builder.Configuration["Jwt:Audience"]
+    ?? builder.Configuration["JWT_AUDIENCE"]
+    ?? "PositivePOSUI";
 
 builder.Services
     .AddAuthentication(options =>
@@ -76,13 +87,10 @@ builder.Services
         {
             ValidateIssuer = true,
             ValidIssuer = jwtIssuer,
-
             ValidateAudience = true,
             ValidAudience = jwtAudience,
-
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
-
             ValidateLifetime = true,
             ClockSkew = TimeSpan.FromMinutes(1)
         };
@@ -120,7 +128,7 @@ builder.Services.AddSwaggerGen(options =>
         Name = "Authorization",
         In = ParameterLocation.Header,
         Type = SecuritySchemeType.Http,
-        Description = "ConstitutionClassUSSEnterpriseNCC1701Alpha",
+        Description = "Enter: Bearer {your JWT token}",
         Reference = new OpenApiReference
         {
             Id = JwtBearerDefaults.AuthenticationScheme,
@@ -137,7 +145,6 @@ builder.Services.AddSwaggerGen(options =>
 
 var app = builder.Build();
 
-// Global JSON exception handler
 app.UseExceptionHandler(errorApp =>
 {
     errorApp.Run(async context =>
